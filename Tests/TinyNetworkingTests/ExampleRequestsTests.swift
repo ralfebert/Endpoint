@@ -1,5 +1,6 @@
 @testable import TinyNetworking
 import XCTest
+import SweetURLRequest
 
 struct ExampleArgs: Codable {
     var name: String
@@ -37,23 +38,23 @@ struct TodosEndpoints {
     let url = URL(string: "https://jsonplaceholder.typicode.com/todos/")!
 
     func get() -> Endpoint<[Todo]> {
-        Endpoint(json: .get, url: url)
+        Endpoint(jsonRequest: URLRequest(method: .get, url: url))
     }
 
     func get(id: Int) -> Endpoint<Todo> {
-        Endpoint(json: .get, url: urlFor(id: id))
+        Endpoint(jsonRequest: URLRequest(method: .get, url: urlFor(id: id)))
     }
 
     func put(todo: Todo) -> Endpoint<Todo> {
-        Endpoint(json: .put, url: urlFor(id: todo.id!), body: todo)
+        Endpoint(jsonRequest: URLRequest(method: .put, url: urlFor(id: todo.id!), jsonBody: todo))
     }
 
     func create(todo: Todo) -> Endpoint<Todo> {
-        Endpoint(json: .post, url: url, body: todo)
+        Endpoint(jsonRequest: URLRequest(method: .post, url: self.url, jsonBody: todo))
     }
 
     func delete(todoId: Int) -> Endpoint<Void> {
-        Endpoint(.delete, url: urlFor(id: todoId))
+        return Endpoint(request: URLRequest(method: .delete, url: urlFor(id: todoId)), parse: EndpointExpectation.ignoreResponse)
     }
 
     private func urlFor(id: Int) -> URL {
@@ -69,10 +70,12 @@ struct TodosEndpoints {
  to check that TinyNetworking carries out the requests as expected.
  */
 final class ExampleRequestsTests: XCTestCase {
+
     func testGetJson() throws {
         let url = URL(string: "https://httpbin.org/get")!
 
-        let endpoint = Endpoint<GetRequestResult>(json: .get, url: url, query: ["name": "hellö ABC"])
+        let urlRequest = URLRequest(method: .get, url: url, parameters: ["name": "hellö ABC"])
+        let endpoint = Endpoint<GetRequestResult>(jsonRequest: urlRequest)
 
         if let result = request(endpoint) {
             XCTAssertEqual("hellö ABC", result.args.name)
@@ -85,7 +88,8 @@ final class ExampleRequestsTests: XCTestCase {
     func testPostJson() throws {
         let url = URL(string: "https://httpbin.org/post")!
 
-        let endpoint = Endpoint<PostJsonRequestResult>(json: .post, url: url, body: ExampleArgs(name: "hellö ABC"))
+        let urlRequest = URLRequest(method: .post, url: url, jsonBody: ExampleArgs(name: "hellö ABC"))
+        let endpoint = Endpoint<PostJsonRequestResult>(jsonRequest: urlRequest)
         if let result = request(endpoint) {
             // httpbin doesn't return a JSON structure but the sent data as String
             let args = try JSONDecoder().decode(ExampleArgs.self, from: result.data.data(using: .utf8)!)
@@ -97,15 +101,8 @@ final class ExampleRequestsTests: XCTestCase {
     func testPostForm() throws {
         let url = URL(string: "https://httpbin.org/post")!
 
-        var urlComponents = URLComponents()
-        urlComponents.queryItems = [
-            URLQueryItem(name: "name", value: "hellö ABC"),
-        ]
-        let body = urlComponents.url!.query!.data(using: .utf8)!
-
-        var endpoint = Endpoint<PostFormRequestResult>(json: .post, url: url)
-        endpoint.request.httpBody = body
-        endpoint.request.setValue(ContentType.formUrlEncoded.rawValue, forHTTPHeaderField: "Content-Type")
+        let urlRequest = URLRequest(method: .post, url: url, parameters: ["name": "hellö ABC"])
+        let endpoint = Endpoint<PostFormRequestResult>(jsonRequest: urlRequest)
 
         if let result = request(endpoint) {
             XCTAssertEqual("hellö ABC", result.form.name)

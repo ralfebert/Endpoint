@@ -2,6 +2,7 @@
 import XCTest
 
 final class URLSessionIntegrationTests: XCTestCase {
+    
     override func setUp() {
         super.setUp()
         URLProtocol.registerClass(TinyHTTPStubURLProtocol.self)
@@ -17,7 +18,7 @@ final class URLSessionIntegrationTests: XCTestCase {
 
         TinyHTTPStubURLProtocol.urls[url] = StubbedResponse(response: HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!, data: exampleJSON.data(using: .utf8)!)
 
-        let endpoint = Endpoint<[Person]>(json: .get, url: url)
+        let endpoint = Endpoint<[Person]>(jsonRequest: URLRequest(url: url))
         let expectation = self.expectation(description: "Stubbed network call")
 
         let task = URLSession.shared.load(endpoint) { result in
@@ -41,7 +42,7 @@ final class URLSessionIntegrationTests: XCTestCase {
         
         TinyHTTPStubURLProtocol.urls[url] = StubbedResponse(response: HTTPURLResponse(url: url, statusCode: 500, httpVersion: nil, headerFields: nil)!, data: internalErrorResponse)
         
-        let endpoint = Endpoint<[Person]>(json: .get, url: url)
+        let endpoint = Endpoint<[Person]>(jsonRequest: URLRequest(url: url))
         let expectation = self.expectation(description: "Stubbed network call")
         
         let task = URLSession.shared.load(endpoint) { result in
