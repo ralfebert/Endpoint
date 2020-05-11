@@ -1,6 +1,6 @@
+import SweetURLRequest
 @testable import TinyNetworking
 import XCTest
-import SweetURLRequest
 
 struct ExampleArgs: Codable {
     var name: String
@@ -38,15 +38,15 @@ struct TodosEndpoints {
     let url = URL(string: "https://jsonplaceholder.typicode.com/todos/")!
 
     func get() -> Endpoint<[Todo]> {
-        Endpoint(jsonRequest: URLRequest(method: .get, url: url))
+        Endpoint(jsonRequest: URLRequest(method: .get, url: self.url))
     }
 
     func get(id: Int) -> Endpoint<Todo> {
-        Endpoint(jsonRequest: URLRequest(method: .get, url: urlFor(id: id)))
+        Endpoint(jsonRequest: URLRequest(method: .get, url: self.urlFor(id: id)))
     }
 
     func put(todo: Todo) -> Endpoint<Todo> {
-        Endpoint(jsonRequest: URLRequest(method: .put, url: urlFor(id: todo.id!), jsonBody: todo))
+        Endpoint(jsonRequest: URLRequest(method: .put, url: self.urlFor(id: todo.id!), jsonBody: todo))
     }
 
     func create(todo: Todo) -> Endpoint<Todo> {
@@ -54,11 +54,11 @@ struct TodosEndpoints {
     }
 
     func delete(todoId: Int) -> Endpoint<Void> {
-        return Endpoint(request: URLRequest(method: .delete, url: urlFor(id: todoId)), parse: EndpointExpectation.ignoreResponse)
+        return Endpoint(request: URLRequest(method: .delete, url: self.urlFor(id: todoId)), parse: EndpointExpectation.ignoreResponse)
     }
 
     private func urlFor(id: Int) -> URL {
-        URL(string: String(id), relativeTo: url)!
+        URL(string: String(id), relativeTo: self.url)!
     }
 }
 
@@ -132,7 +132,7 @@ final class ExampleRequestsTests: XCTestCase {
     }
 
     func testRestAPITodosDelete() {
-        request(TodosEndpoints().delete(todoId: 1))
+        self.request(TodosEndpoints().delete(todoId: 1))
     }
 
     private func request<Payload>(_ endpoint: Endpoint<Payload>) -> Payload? {
@@ -141,10 +141,10 @@ final class ExampleRequestsTests: XCTestCase {
         var payload: Payload?
         let task = URLSession.shared.load(endpoint) { result in
             switch result {
-            case let .success(resultPayload):
-                payload = resultPayload
-            case let .failure(error):
-                XCTFail(String(describing: error))
+                case let .success(resultPayload):
+                    payload = resultPayload
+                case let .failure(error):
+                    XCTFail(String(describing: error))
             }
             expectation.fulfill()
         }

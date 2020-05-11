@@ -4,20 +4,20 @@ import os
 
 public struct EndpointExpectation {
 
-    public static func successStatusCode(data : Data?, response: HTTPURLResponse) throws {
+    public static func successStatusCode(data: Data?, response: HTTPURLResponse) throws {
         let code = response.statusCode
         guard (200 ..< 300).contains(code) else {
             throw WrongStatusCodeError(statusCode: code, response: response, responseBody: data)
         }
     }
-    
+
     public static func emptyResponse(_ data: Data?, _: HTTPURLResponse) throws {
         guard let data = data else { return }
         guard data.count == 0 else { throw EndpointError(description: "Expected an empty response") }
     }
 
     public static func ignoreResponse(_: Data?, _: HTTPURLResponse) throws {}
-    
+
 }
 
 public struct EndpointLogging {
@@ -28,32 +28,32 @@ public struct EndpointLogging {
 
 /// This describes an endpoint returning `A` values. It contains both a `URLRequest` and a way to parse the response.
 public struct Endpoint<A> {
-        
+
     /// The request for this endpoint
     public var request: URLRequest
-    
+
     /// This is used to validate the response (like, check the status code).
     public typealias ValidateFunction = (_ data: Data?, _ response: HTTPURLResponse) throws -> Void
     var validate: ValidateFunction
 
     /// This is used to (try to) parse a response into an `A`.
-    public typealias ParseFunction = (_ data : Data?, _ response: HTTPURLResponse) throws -> A?
+    public typealias ParseFunction = (_ data: Data?, _ response: HTTPURLResponse) throws -> A?
     var parse: ParseFunction
-    
+
     /// Transforms the result
     public func map<B>(_ f: @escaping (A) -> B) -> Endpoint<B> {
-        return Endpoint<B>(request: request, validate: validate, parse: { value, response in
+        return Endpoint<B>(request: self.request, validate: self.validate, parse: { value, response in
             try self.parse(value, response).map(f)
         })
     }
 
     /// Transforms the result
     public func compactMap<B>(_ transform: @escaping (A) throws -> B) -> Endpoint<B> {
-        return Endpoint<B>(request: request, validate: validate, parse: { data, response in
+        return Endpoint<B>(request: self.request, validate: self.validate, parse: { data, response in
             try self.parse(data, response).flatMap(transform)
         })
     }
-    
+
     /// Creates a new Endpoint from a request
     ///
     /// - Parameters:
@@ -69,7 +69,7 @@ public struct Endpoint<A> {
 }
 
 extension Endpoint where A: Decodable {
-    
+
     /// Creates a new Endpoint from a request that returns JSON
     ///
     /// - Parameters:
@@ -87,6 +87,7 @@ extension Endpoint where A: Decodable {
 }
 
 // MARK: - CustomStringConvertible
+
 extension Endpoint: CustomStringConvertible {
     public var description: String {
         "[\(self.request.httpMethod ?? "") \(self.request.url?.absoluteString ?? "")]"
@@ -95,7 +96,7 @@ extension Endpoint: CustomStringConvertible {
 
 /// Signals that a response's data was unexpectedly nil.
 public struct NoDataError: Error {
-    public init() { }
+    public init() {}
 }
 
 /// An unknown error

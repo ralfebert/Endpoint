@@ -1,9 +1,9 @@
+import SweetURLRequest
 @testable import TinyNetworking
 import XCTest
-import SweetURLRequest
 
 final class TinyNetworkingTests: XCTestCase {
-    
+
     func testUrlWithoutParams() {
         let url = URL(string: "http://www.example.com/example.json")!
         let endpoint = Endpoint<[String]>(jsonRequest: URLRequest(url: url))
