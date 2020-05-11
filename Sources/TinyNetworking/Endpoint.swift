@@ -2,14 +2,32 @@ import Foundation
 import os
 @_exported import SweetURLRequest
 
+public typealias ValidateFunction = (_ data: Data?, _ response: HTTPURLResponse) throws -> Void
+
 public struct EndpointExpectation {
 
-    public static func successStatusCode(data: Data?, response: HTTPURLResponse) throws {
-        let code = response.statusCode
-        guard (200 ..< 300).contains(code) else {
-            throw WrongStatusCodeError(statusCode: code, response: response, responseBody: data)
+    public static func expectStatusCode(_ validate: @escaping (_ statusCode: Int) -> Bool) -> ValidateFunction {
+        return { (data: Data?, response: HTTPURLResponse) throws in
+            let code = response.statusCode
+            guard validate(code) else {
+                throw WrongStatusCodeError(statusCode: code, response: response, responseBody: data)
+            }
         }
     }
+
+    public static func expectStatusCode(_ range: Range<Int>) -> ValidateFunction {
+        self.expectStatusCode { range.contains($0) }
+    }
+
+    public static func expectStatusCode(_ values: [Int]) -> ValidateFunction {
+        self.expectStatusCode { values.contains($0) }
+    }
+
+    public static func expectStatusCode(_ value: Int) -> ValidateFunction {
+        self.expectStatusCode { $0 == value }
+    }
+
+    public static let successStatusCode = expectStatusCode(200 ..< 300)
 
     public static func emptyResponse(_ data: Data?, _: HTTPURLResponse) throws {
         guard let data = data else { return }
@@ -33,7 +51,6 @@ public struct Endpoint<A> {
     public var request: URLRequest
 
     /// This is used to validate the response (like, check the status code).
-    public typealias ValidateFunction = (_ data: Data?, _ response: HTTPURLResponse) throws -> Void
     var validate: ValidateFunction
 
     /// This is used to (try to) parse a response into an `A`.
