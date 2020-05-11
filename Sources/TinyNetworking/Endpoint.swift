@@ -40,7 +40,7 @@ public struct EndpointExpectation {
 
 public struct EndpointLogging {
 
-    static let log = OSLog(subsystem: "TinyNetworking", category: "Endpoint")
+    public static let log = OSLog(subsystem: "TinyNetworking", category: "Endpoint")
 
 }
 
