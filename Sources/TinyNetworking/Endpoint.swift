@@ -1,4 +1,5 @@
 import Foundation
+import os
 @_exported import SweetURLRequest
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -22,6 +23,11 @@ public struct EndpointExpectation {
     
 }
 
+public struct EndpointLogging {
+
+    static let log = OSLog(subsystem: "TinyNetworking", category: "Endpoint")
+
+}
 
 /// This describes an endpoint returning `A` values. It contains both a `URLRequest` and a way to parse the response.
 public struct Endpoint<A> {
@@ -86,8 +92,7 @@ extension Endpoint where A: Decodable {
 // MARK: - CustomStringConvertible
 extension Endpoint: CustomStringConvertible {
     public var description: String {
-        let data = request.httpBody ?? Data()
-        return "\(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "<no url>") \(String(data: data, encoding: .utf8) ?? "")"
+        "[\(self.request.httpMethod ?? "") \(self.request.url?.absoluteString ?? "")]"
     }
 }
 
@@ -132,12 +137,16 @@ extension URLSession {
     /// Loads an endpoint by creating (and directly resuming) a data task.
     ///
     /// - Parameters:
-    ///   - e: The endpoint.
+    ///   - endpoint: The endpoint.
     ///   - onComplete: The completion handler.
     /// - Returns: The data task.
-    public func load<A>(_ e: Endpoint<A>, onComplete: @escaping (Result<A, Error>) -> ()) -> URLSessionDataTask {
-        let r = e.request
-        let task = dataTask(with: r, completionHandler: { data, response, error in
+    public func load<A>(_ endpoint: Endpoint<A>, onComplete: @escaping (Result<A, Error>) -> ()) -> URLSessionDataTask {
+        os_log("Loading %s", log: EndpointLogging.log, type: .debug, endpoint.description)
+
+        let task = dataTask(with: endpoint.request, completionHandler: { data, response, error in
+            
+            os_log("Got response for %s - %i bytes", log: EndpointLogging.log, type: .debug, endpoint.description, data?.count ?? 0)
+
             if let error = error {
                 onComplete(.failure(error))
                 return
@@ -149,8 +158,8 @@ extension URLSession {
             }
             
             do {
-                try e.validate(data, httpResponse)
-                if let result = try e.parse(data, httpResponse) {
+                try endpoint.validate(data, httpResponse)
+                if let result = try endpoint.parse(data, httpResponse) {
                     onComplete(.success(result))
                 } else {
                     onComplete(.failure(NoDataError()))
@@ -175,18 +184,20 @@ extension URLSession {
     /// Returns a publisher that wraps a URL session data task for a given Endpoint.
     ///
     /// - Parameters:
-    ///   - e: The endpoint.
+    ///   - endpoint: The endpoint.
     /// - Returns: The publisher of a dataTask.
-    public func load<A>(_ e: Endpoint<A>) -> AnyPublisher<A, Error> {
-        let r = e.request
-        return dataTaskPublisher(for: r)
+    public func load<A>(_ endpoint: Endpoint<A>) -> AnyPublisher<A, Error> {
+        os_log("Loading %s", log: EndpointLogging.log, type: .debug, endpoint.description)
+        return dataTaskPublisher(for: endpoint.request)
             .tryMap { data, response in
+                os_log("Got response for %s - %i bytes", log: EndpointLogging.log, type: .debug, endpoint.description, data.count)
+
                 guard let httpResponse = response as? HTTPURLResponse else {
                     throw EndpointError(description: "Response was not a HTTPURLResponse")
                 }
 
-                try e.validate(data, httpResponse)
-                if let result = try e.parse(data, httpResponse) {
+                try endpoint.validate(data, httpResponse)
+                if let result = try endpoint.parse(data, httpResponse) {
                     return result
                 } else {
                     throw NoDataError()
