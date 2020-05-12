@@ -6,7 +6,7 @@ public typealias ValidateFunction = (_ data: Data?, _ response: HTTPURLResponse)
 
 public struct EndpointExpectation {
 
-    public static func expectStatusCode(_ validate: @escaping (_ statusCode: Int) -> Bool) -> ValidateFunction {
+    public static func validateStatusCode(_ validate: @escaping (_ statusCode: Int) -> Bool) -> ValidateFunction {
         return { (data: Data?, response: HTTPURLResponse) throws in
             let code = response.statusCode
             guard validate(code) else {
@@ -15,19 +15,22 @@ public struct EndpointExpectation {
         }
     }
 
-    public static func expectStatusCode(_ range: Range<Int>) -> ValidateFunction {
-        self.expectStatusCode { range.contains($0) }
+    public static func expectStatus(_ responseType: HTTPStatusCode.ResponseType) -> ValidateFunction {
+        self.validateStatusCode { HTTPStatusCode.ResponseType(httpStatusCode: $0) == responseType }
     }
 
-    public static func expectStatusCode(_ values: [Int]) -> ValidateFunction {
-        self.expectStatusCode { values.contains($0) }
+    public static func expectStatus(_ values: [HTTPStatusCode]) -> ValidateFunction {
+        self.validateStatusCode {
+            guard let statusCode = HTTPStatusCode(rawValue: $0) else { return false }
+            return values.contains(statusCode)
+        }
     }
 
-    public static func expectStatusCode(_ value: Int) -> ValidateFunction {
-        self.expectStatusCode { $0 == value }
+    public static func expectStatus(_ value: HTTPStatusCode) -> ValidateFunction {
+        self.validateStatusCode { HTTPStatusCode(rawValue: $0) == value }
     }
 
-    public static let successStatusCode = expectStatusCode(200 ..< 300)
+    public static let expectSuccess = expectStatus(.success)
 
     public static func emptyResponse(_ data: Data?, _: HTTPURLResponse) throws {
         guard let data = data else { return }
@@ -77,7 +80,7 @@ public struct Endpoint<A> {
     ///   - request: the URL request
     ///   - validate: this validates the response, f.e. checks the status code.
     ///   - parse: this converts a response into an `A`.
-    public init(request: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.successStatusCode, parse: @escaping ParseFunction) {
+    public init(request: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, parse: @escaping ParseFunction) {
         self.request = request
         self.validate = validate
         self.parse = parse
@@ -93,7 +96,7 @@ extension Endpoint where A: Decodable {
     ///   - request: the URL request
     ///   - validate: this validates the response, f.e. checks the status code.
     ///   - parse: this converts a response into an `A`.
-    public init(jsonRequest: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.successStatusCode, jsonDecoder: JSONDecoder = JSONDecoder()) {
+    public init(jsonRequest: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, jsonDecoder: JSONDecoder = JSONDecoder()) {
         var jsonRequest = jsonRequest
         jsonRequest.headers.accept = .json
         self.request = jsonRequest

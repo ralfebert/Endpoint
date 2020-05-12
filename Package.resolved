@@ -2,12 +2,21 @@
   "object": {
     "pins": [
       {
+        "package": "HttpEnums",
+        "repositoryURL": "https://github.com/ralfebert/HttpEnums.git",
+        "state": {
+          "branch": null,
+          "revision": "796d01d7e2a969821d09693c7037c7b95f7c53f4",
+          "version": "0.1.0"
+        }
+      },
+      {
         "package": "SweetURLRequest",
         "repositoryURL": "https://github.com/ralfebert/SweetURLRequest.git",
         "state": {
           "branch": null,
-          "revision": "040b9392d478c76d3c9798189712a0a0da061b16",
-          "version": "0.1.3"
+          "revision": "fcdd708f41bfe95d81ae3ecacc6b11df813a3a27",
+          "version": "0.1.5"
         }
       }
     ]
