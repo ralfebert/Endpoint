@@ -1,5 +1,5 @@
 import SweetURLRequest
-@testable import TinyNetworking
+@testable import Endpoint
 import XCTest
 
 struct ExampleArgs: Codable {
@@ -139,7 +139,7 @@ final class ExampleRequestsTests: XCTestCase {
         let expectation = self.expectation(description: "Request result")
 
         var payload: Payload?
-        let task = URLSession.shared.load(endpoint) { result in
+        let task = endpoint.load { result in
             switch result {
                 case let .success(resultPayload):
                     payload = resultPayload

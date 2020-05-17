@@ -51,14 +51,17 @@ public struct EndpointLogging {
 public struct Endpoint<A> {
 
     /// The request for this endpoint
-    public var request: URLRequest
+    let request: URLRequest
+
+    /// The URLSession to use for this endpoint
+    let urlSession: URLSession
 
     /// This is used to validate the response (like, check the status code).
-    var validate: ValidateFunction
+    let validate: ValidateFunction
 
     /// This is used to (try to) parse a response into an `A`.
     public typealias ParseFunction = (_ data: Data?, _ response: HTTPURLResponse) throws -> A?
-    var parse: ParseFunction
+    let parse: ParseFunction
 
     /// Transforms the result
     public func map<B>(_ f: @escaping (A) -> B) -> Endpoint<B> {
@@ -80,8 +83,9 @@ public struct Endpoint<A> {
     ///   - request: the URL request
     ///   - validate: this validates the response, f.e. checks the status code.
     ///   - parse: this converts a response into an `A`.
-    public init(request: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, parse: @escaping ParseFunction) {
+    public init(request: URLRequest, urlSession: URLSession = .shared, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, parse: @escaping ParseFunction) {
         self.request = request
+        self.urlSession = urlSession
         self.validate = validate
         self.parse = parse
     }
@@ -96,9 +100,10 @@ extension Endpoint where A: Decodable {
     ///   - request: the URL request
     ///   - validate: this validates the response, f.e. checks the status code.
     ///   - parse: this converts a response into an `A`.
-    public init(jsonRequest: URLRequest, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, jsonDecoder: JSONDecoder = JSONDecoder()) {
+    public init(jsonRequest: URLRequest, urlSession: URLSession = .shared, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, jsonDecoder: JSONDecoder = JSONDecoder()) {
         var jsonRequest = jsonRequest
         jsonRequest.headers.accept = .json
+        self.urlSession = urlSession
         self.request = jsonRequest
         self.validate = validate
         self.parse = jsonDecoder.decodeResponse

@@ -1,4 +1,4 @@
-@testable import TinyNetworking
+@testable import Endpoint
 import XCTest
 
 final class URLSessionIntegrationTests: XCTestCase {
@@ -21,7 +21,7 @@ final class URLSessionIntegrationTests: XCTestCase {
         let endpoint = Endpoint<[Person]>(jsonRequest: URLRequest(url: url))
         let expectation = self.expectation(description: "Stubbed network call")
 
-        let task = URLSession.shared.load(endpoint) { result in
+        let task = endpoint.load { result in
             switch result {
                 case let .success(payload):
                     XCTAssertEqual([Person(name: "Alice"), Person(name: "Bob")], payload)
@@ -45,7 +45,7 @@ final class URLSessionIntegrationTests: XCTestCase {
         let endpoint = Endpoint<[Person]>(jsonRequest: URLRequest(url: url))
         let expectation = self.expectation(description: "Stubbed network call")
 
-        let task = URLSession.shared.load(endpoint) { result in
+        let task = endpoint.load { result in
             switch result {
                 case .success:
                     XCTFail("Expected an Error in Result.")
