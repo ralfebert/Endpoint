@@ -43,7 +43,7 @@ public struct EndpointExpectation {
 
 public struct EndpointLogging {
 
-    public static let log = OSLog(subsystem: "TinyNetworking", category: "Endpoint")
+    public static let log = OSLog(subsystem: "Endpoint", category: "Endpoint")
 
 }
 
@@ -67,13 +67,6 @@ public struct Endpoint<A> {
     public func map<B>(_ f: @escaping (A) -> B) -> Endpoint<B> {
         return Endpoint<B>(request: self.request, validate: self.validate, parse: { value, response in
             try self.parse(value, response).map(f)
-        })
-    }
-
-    /// Transforms the result
-    public func compactMap<B>(_ transform: @escaping (A) throws -> B) -> Endpoint<B> {
-        return Endpoint<B>(request: self.request, validate: self.validate, parse: { data, response in
-            try self.parse(data, response).flatMap(transform)
         })
     }
 
@@ -103,10 +96,7 @@ extension Endpoint where A: Decodable {
     public init(jsonRequest: URLRequest, urlSession: URLSession = .shared, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess, jsonDecoder: JSONDecoder = JSONDecoder()) {
         var jsonRequest = jsonRequest
         jsonRequest.headers.accept = .json
-        self.urlSession = urlSession
-        self.request = jsonRequest
-        self.validate = validate
-        self.parse = jsonDecoder.decodeResponse
+        self.init(request: jsonRequest, urlSession: urlSession, validate: validate, parse: jsonDecoder.decodeResponse)
     }
 
 }

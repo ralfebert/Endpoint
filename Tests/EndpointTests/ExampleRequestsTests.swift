@@ -1,5 +1,5 @@
-import SweetURLRequest
 @testable import Endpoint
+import SweetURLRequest
 import XCTest
 
 struct ExampleArgs: Codable {

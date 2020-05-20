@@ -18,9 +18,8 @@ extension Endpoint {
 
         let task = self.urlSession.dataTask(with: self.request, completionHandler: { data, response, error in
 
-            os_log("Got response for %s - %i bytes", log: EndpointLogging.log, type: .debug, self.description, data?.count ?? 0)
-
             if let error = error {
+                os_log("Error for %s: %s", log: EndpointLogging.log, type: .error, self.description, String(describing: error))
                 onComplete(.failure(error))
                 return
             }
@@ -31,6 +30,7 @@ extension Endpoint {
             }
 
             do {
+                os_log("Got response for %s: %i bytes", log: EndpointLogging.log, type: .debug, self.description, data?.count ?? 0)
                 try self.validate(data, httpResponse)
                 if let result = try self.parse(data, httpResponse) {
                     onComplete(.success(result))
@@ -61,8 +61,12 @@ extension Endpoint {
         public func load() -> AnyPublisher<A, Error> {
             os_log("Loading %s", log: EndpointLogging.log, type: .debug, self.description)
             return self.urlSession.dataTaskPublisher(for: self.request)
+                .mapError { (error) -> Error in
+                    os_log("Error for %s: %s", log: EndpointLogging.log, type: .error, self.description, String(describing: error))
+                    return error
+                }
                 .tryMap { data, response in
-                    os_log("Got response for %s - %i bytes", log: EndpointLogging.log, type: .debug, self.description, data.count)
+                    os_log("Got response for %s: %i bytes", log: EndpointLogging.log, type: .debug, self.description, data.count)
 
                     guard let httpResponse = response as? HTTPURLResponse else {
                         throw EndpointError(description: "Response was not a HTTPURLResponse")
