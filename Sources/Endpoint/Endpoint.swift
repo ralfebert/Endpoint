@@ -101,6 +101,15 @@ extension Endpoint where A: Decodable {
 
 }
 
+// Allow omitting the parse parameter for empty results of Void type
+extension Endpoint where A == Void {
+
+    public init(request: URLRequest, urlSession: URLSession = .shared, validate: @escaping ValidateFunction = EndpointExpectation.expectSuccess) {
+        self.init(request: request, urlSession: urlSession, validate: validate, parse: EndpointExpectation.ignoreResponse)
+    }
+
+}
+
 // MARK: - CustomStringConvertible
 
 extension Endpoint: CustomStringConvertible {

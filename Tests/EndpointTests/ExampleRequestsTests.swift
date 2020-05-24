@@ -54,7 +54,7 @@ struct TodosEndpoints {
     }
 
     func delete(todoId: Int) -> Endpoint<Void> {
-        return Endpoint(request: URLRequest(method: .delete, url: self.urlFor(id: todoId)), parse: EndpointExpectation.ignoreResponse)
+        return Endpoint(request: URLRequest(method: .delete, url: self.urlFor(id: todoId)))
     }
 
     private func urlFor(id: Int) -> URL {
