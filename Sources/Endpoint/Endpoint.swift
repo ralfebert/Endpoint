@@ -51,7 +51,7 @@ public struct EndpointLogging {
 public struct Endpoint<A> {
 
     /// The request for this endpoint
-    let request: URLRequest
+    public let request: URLRequest
 
     /// The URLSession to use for this endpoint
     let urlSession: URLSession
