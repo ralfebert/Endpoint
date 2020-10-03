@@ -114,7 +114,7 @@ extension Endpoint where A == Void {
 
 extension Endpoint: CustomStringConvertible {
     public var description: String {
-        "[\(self.request.httpMethod ?? "") \(self.request.url?.absoluteString ?? "")]"
+        "\(self.request.httpMethod ?? "") \(self.request.url?.absoluteString ?? "")"
     }
 }
 
