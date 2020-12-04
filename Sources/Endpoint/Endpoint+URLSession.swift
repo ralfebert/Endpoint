@@ -4,7 +4,7 @@ import os
     import FoundationNetworking
 #endif
 
-extension Endpoint {
+public extension Endpoint {
 
     @discardableResult
     /// Loads an endpoint by creating (and directly resuming) a data task.
@@ -13,7 +13,7 @@ extension Endpoint {
     ///   - endpoint: The endpoint.
     ///   - onComplete: The completion handler.
     /// - Returns: The data task.
-    public func load(onComplete: @escaping (Result<A, Error>) -> Void) -> URLSessionDataTask {
+    func load(onComplete: @escaping (Result<A, Error>) -> Void) -> URLSessionDataTask {
         os_log(">>> %s", log: EndpointLogging.log, type: .debug, self.description)
 
         let task = self.urlSession.dataTask(with: self.request, completionHandler: { data, response, error in
@@ -52,13 +52,13 @@ extension Endpoint {
     import Combine
 
     @available(iOS 13, macOS 10.15, watchOS 6, tvOS 13, *)
-    extension Endpoint {
+    public extension Endpoint {
         /// Returns a publisher that wraps a URL session data task for a given Endpoint.
         ///
         /// - Parameters:
         ///   - endpoint: The endpoint.
         /// - Returns: The publisher of a dataTask.
-        public func load() -> AnyPublisher<A, Error> {
+        func load() -> AnyPublisher<A, Error> {
             os_log(">>> %s", log: EndpointLogging.log, type: .debug, self.description)
             return self.urlSession.dataTaskPublisher(for: self.request)
                 .mapError { (error) -> Error in
@@ -66,20 +66,24 @@ extension Endpoint {
                     return error
                 }
                 .tryMap { data, response in
-                    os_log("Got response: %i bytes", log: EndpointLogging.log, type: .debug, data.count)
-
-                    guard let httpResponse = response as? HTTPURLResponse else {
-                        throw EndpointError(description: "Response was not a HTTPURLResponse")
-                    }
-
-                    try self.validate(data, httpResponse)
-                    if let result = try self.parse(data, httpResponse) {
-                        return result
-                    } else {
-                        throw NoDataError()
-                    }
+                    try self.handleResponse(data: data, response: response)
                 }
                 .eraseToAnyPublisher()
+        }
+
+        func handleResponse(data: Data, response: URLResponse) throws -> A {
+            os_log("Got response: %i bytes", log: EndpointLogging.log, type: .debug, data.count)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw EndpointError(description: "Response was not a HTTPURLResponse")
+            }
+
+            try self.validate(data, httpResponse)
+            if let result = try self.parse(data, httpResponse) {
+                return result
+            } else {
+                throw NoDataError()
+            }
         }
     }
 #endif
